@@ -12,6 +12,7 @@
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
 
+from pickle import NONE
 from util import manhattanDistance
 from game import Directions
 import random, util
@@ -68,13 +69,48 @@ class ReflexAgent(Agent):
         """
         # Useful information you can extract from a GameState (pacman.py)
         successorGameState = currentGameState.generatePacmanSuccessor(action)
+        #print("successorgamestate: ",successorGameState)
         newPos = successorGameState.getPacmanPosition()
+        #print("newPos: ",newPos)
         newFood = successorGameState.getFood()
+        #print("newFood: ",newFood.asList())
         newGhostStates = successorGameState.getGhostStates()
+        #print("newGhostStates: ",type(newGhostStates[0]))
         newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
 
         "*** YOUR CODE HERE ***"
-        return successorGameState.getScore()
+        aveFoodDistance = self.averageDis(newPos,newFood)
+        minGhoustDistance = self.minGhoustDis(newPos,newGhostStates)
+        warning = self.ghostWarning(newPos,newGhostStates)
+        return successorGameState.getScore() - 0.5*minGhoustDistance - aveFoodDistance + warning
+    
+    def averageDis(self,pacpos,newFood):
+        # average distance from food point to pacman
+        if len(newFood.asList()) == 0:
+            return 1
+        sum = 0
+        for food in newFood.asList():
+            sum += util.manhattanDistance(pacpos,food)
+        return sum/len(newFood.asList())
+    
+    def minGhoustDis(self,pacpos,newGhostStates):
+        # minimum ghost distance
+        minimum = util.manhattanDistance(pacpos,newGhostStates[0].getPosition())
+        for ghost in newGhostStates:
+            dis = util.manhattanDistance(pacpos,ghost.getPosition())
+            if dis < minimum:
+                minimum = dis
+        if dis == 0:
+            return 1
+        return dis
+    
+    def ghostWarning(self,pacpos, newGhostStates):
+        # warning if the ghost is too close (<2)
+        minDis = self.minGhoustDis(pacpos,newGhostStates)
+        if minDis < 2:
+            return -100
+        else:
+            return 0
 
 def scoreEvaluationFunction(currentGameState):
     """
@@ -135,7 +171,47 @@ class MinimaxAgent(MultiAgentSearchAgent):
         Returns whether or not the game state is a losing state
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        value,action = self.max_value(gameState,0)
+        return action
+        
+        
+    def max_value(self,gameState,depth):
+        if depth == self.depth:
+            return self.evaluationFunction(gameState), None
+        value = float('-inf')
+        move = None
+        actionlist = gameState.getLegalActions(0)
+        if actionlist == []:
+            return self.evaluationFunction(gameState), None
+        for action in actionlist:
+            newState = gameState.generateSuccessor(0, action)
+            newValue, _ = self.min_value(newState,depth,1)
+            if newValue > value:
+                value = newValue
+                move = action
+        return value, move
+            
+            
+    def min_value(self, gameState,depth,index):
+        if depth == self.depth:
+            return self.evaluationFunction(gameState), None
+        value = float('inf')
+        move = None
+        actionlist = gameState.getLegalActions(index)
+        if actionlist == []:
+            return self.evaluationFunction(gameState), None
+        for action in actionlist:
+            newState = gameState.generateSuccessor(index, action)
+            if index == gameState.getNumAgents()-1:
+                newValue, _ = self.max_value(newState,depth+1)
+            else:
+                newValue, _ = self.min_value(newState,depth,index+1)
+            if newValue < value:
+                value = newValue
+                move = action
+        return value, move
+    
+    
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
