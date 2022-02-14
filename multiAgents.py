@@ -223,7 +223,52 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        value,action = self.max_value(gameState,float('-inf'),float('inf'),0)
+        return action
+    
+    def max_value(self,gameState,alpha,beta,depth):
+        #print(0,alpha,beta)
+        if depth == self.depth:
+            return self.evaluationFunction(gameState), None
+        value = float('-inf')
+        move = None
+        actionlist = gameState.getLegalActions(0)
+        if actionlist == []:
+            return self.evaluationFunction(gameState), None
+        for action in actionlist:
+            newState = gameState.generateSuccessor(0, action)
+            newValue, _ = self.min_value(newState,alpha,beta,depth,1)
+            if newValue > value:
+                value = newValue
+                move = action
+            alpha = max(alpha,value)
+            if value > beta:
+                #print(value,beta)
+                return value,move
+        return value, move
+    
+    def min_value(self, gameState,alpha,beta,depth,index):
+        #print(index,alpha,beta)
+        if depth == self.depth:
+            return self.evaluationFunction(gameState), None
+        value = float('inf')
+        move = None
+        actionlist = gameState.getLegalActions(index)
+        if actionlist == []:
+            return self.evaluationFunction(gameState), None
+        for action in actionlist:
+            newState = gameState.generateSuccessor(index, action)
+            if index == gameState.getNumAgents()-1:
+                newValue, _ = self.max_value(newState,alpha,beta,depth+1)
+            else:
+                newValue, _ = self.min_value(newState,alpha,beta,depth,index+1)
+            if newValue < value:
+                value = newValue
+                move = action
+            beta = min(value, beta)
+            if value < alpha:
+                return value,move
+        return value, move
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
