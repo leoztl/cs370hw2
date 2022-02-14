@@ -283,7 +283,44 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        value,action = self.max_value(gameState,0)
+        return action
+    
+    def max_value(self,gameState,depth):
+        if depth == self.depth:
+            return self.evaluationFunction(gameState), None
+        value = float('-inf')
+        move = None
+        actionlist = gameState.getLegalActions(0)
+        if actionlist == []:
+            return self.evaluationFunction(gameState), None
+        for action in actionlist:
+            newState = gameState.generateSuccessor(0, action)
+            newValue, _ = self.min_value(newState,depth,1)
+            if newValue > value:
+                value = newValue
+                move = action
+        return value, move
+            
+            
+    def min_value(self, gameState,depth,index):
+        if depth == self.depth:
+            return self.evaluationFunction(gameState), None
+        value = 0
+        move = None
+        actionlist = gameState.getLegalActions(index)
+        if actionlist == []:
+            return self.evaluationFunction(gameState), None
+        prob = 1/len(actionlist)
+        for action in actionlist:
+            newState = gameState.generateSuccessor(index, action)
+            if index == gameState.getNumAgents()-1:
+                newValue, _ = self.max_value(newState,depth+1)
+            else:
+                newValue, _ = self.min_value(newState,depth,index+1)
+            value += newValue * prob
+            move = action
+        return value, move
 
 def betterEvaluationFunction(currentGameState):
     """
@@ -293,7 +330,33 @@ def betterEvaluationFunction(currentGameState):
     DESCRIPTION: <write something here so we know what you did>
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    pacmanPosition = currentGameState.getPacmanPosition()
+    Food = currentGameState.getFood()
+    Ghost = currentGameState.getGhostStates()
+        
+    averageFoodDistance = averageDis(pacmanPosition,Food)
+    minimumGhostDistance = minGhoustDis(pacmanPosition,Ghost)
+    
+    return currentGameState.getScore() - averageFoodDistance - 0.5*minimumGhostDistance
+    
+def averageDis(pacpos,newFood):
+        # average distance from food point to pacman
+        if len(newFood.asList()) == 0:
+            return 1
+        sum = 0
+        for food in newFood.asList():
+            sum += util.manhattanDistance(pacpos,food)
+        return sum/len(newFood.asList())
 
+def minGhoustDis(pacpos,newGhostStates):
+        # minimum ghost distance
+        minimum = util.manhattanDistance(pacpos,newGhostStates[0].getPosition())
+        for ghost in newGhostStates:
+            dis = util.manhattanDistance(pacpos,ghost.getPosition())
+            if dis < minimum:
+                minimum = dis
+        if dis == 0:
+            return 1
+        return dis
 # Abbreviation
 better = betterEvaluationFunction
